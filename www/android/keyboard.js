@@ -24,10 +24,10 @@ Keyboard.disableScroll = function(disable) {
 };
 
 /*
-Keyboard.styleDark = function(dark) {
+ Keyboard.styleDark = function(dark) {
  exec(null, null, "Keyboard", "styleDark", [dark]);
-};
-*/
+ };
+ */
 
 Keyboard.isVisible = false;
 
@@ -37,18 +37,15 @@ channel.onCordovaReady.subscribe(function() {
     function success(msg) {
         var action = msg.charAt(0);
         if ( action === 'S' ) {
-            var keyboardHeight = msg.substr(1);
+            var heights = msg.substr(1).split(";");
+            var keyboardHeight = heights[0];
+            var statusBarHeight = heights[1];
             cordova.plugins.Keyboard.isVisible = true;
-            cordova.fireWindowEvent('native.keyboardshow', { 'keyboardHeight': + keyboardHeight });
-
-            //deprecated
-            cordova.fireWindowEvent('native.showkeyboard', { 'keyboardHeight': + keyboardHeight });
+            // add statusBarHeight property to event object
+            cordova.fireWindowEvent('native.keyboardshow', { 'keyboardHeight': + keyboardHeight, 'statusBarHeight': + statusBarHeight });
         } else if ( action === 'H' ) {
             cordova.plugins.Keyboard.isVisible = false;
             cordova.fireWindowEvent('native.keyboardhide');
-
-            //deprecated
-            cordova.fireWindowEvent('native.hidekeyboard');
         }
     }
 });
