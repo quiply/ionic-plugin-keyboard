@@ -16,6 +16,11 @@ import android.view.View;
 import android.view.ViewTreeObserver.OnGlobalLayoutListener;
 import android.view.inputmethod.InputMethodManager;
 
+// import additionally required classes
+import android.view.Display;
+import android.graphics.Point;
+import android.os.Build;
+
 public class IonicKeyboard extends CordovaPlugin {
 
     public void initialize(CordovaInterface cordova, CordovaWebView webView) {
@@ -52,7 +57,7 @@ public class IonicKeyboard extends CordovaPlugin {
         if ("init".equals(action)) {
             cordova.getThreadPool().execute(new Runnable() {
                 public void run() {
-                	//calculate density-independent pixels (dp)
+                    //calculate density-independent pixels (dp)
                     //http://developer.android.com/guide/practices/screens_support.html
                     DisplayMetrics dm = new DisplayMetrics();
                     cordova.getActivity().getWindowManager().getDefaultDisplay().getMetrics(dm);
@@ -60,37 +65,101 @@ public class IonicKeyboard extends CordovaPlugin {
 
                     //http://stackoverflow.com/a/4737265/1091751 detect if keyboard is showing
                     final View rootView = cordova.getActivity().getWindow().getDecorView().findViewById(android.R.id.content).getRootView();
+
                     OnGlobalLayoutListener list = new OnGlobalLayoutListener() {
+                        // https://github.com/driftyco/ionic-plugin-keyboard/pull/188
+//                        int initialHeightDiff = -1;
                         int previousHeightDiff = 0;
                         @Override
                         public void onGlobalLayout() {
                             Rect r = new Rect();
                             //r will be populated with the coordinates of your view that area still visible.
                             rootView.getWindowVisibleDisplayFrame(r);
-                            
+
+                            // get status bar height in pixels
+                            Rect rectgle= new Rect();
+                            rootView.getWindowVisibleDisplayFrame(rectgle);
+                            int pixelStatusBarHeight = (int)(rectgle.top / density);
+
                             PluginResult result;
 
-                            int heightDiff = rootView.getRootView().getHeight() - r.bottom;
+                            // cache properties for later use
+                            int rootViewHeight = rootView.getRootView().getHeight();
+                            int resultBottom = r.bottom;
+                            int resultTop = r.top;
+
+                            // calculate screen height differently for android versions >= 21: Lollipop 5.x, Marshmallow 6.x
+                            //http://stackoverflow.com/a/29257533/3642890 beware of nexus 5
+                            int screenHeight;
+
+                            if (Build.VERSION.SDK_INT >= 21) {
+                                Display display = cordova.getActivity().getWindowManager().getDefaultDisplay();
+                                Point size = new Point();
+                                display.getSize(size);
+                                screenHeight = size.y;
+                            } else {
+                                screenHeight = rootViewHeight;
+                            }
+
+                            int heightDiff = screenHeight - resultBottom;
                             int pixelHeightDiff = (int)(heightDiff / density);
+
+//                            int qyHeightDifference = screenHeight - (resultBottom - resultTop);
+//                            System.out.println("--- qyHeightDifference: " + qyHeightDifference);
+
+                            // http://stackoverflow.com/a/29257533/3642890 get status bar height another way
+//                            int resourceId = cordova.getActivity().getResources().getIdentifier("status_bar_height", "dimen", "android");
+//                            int statusBarHeight2 = -1;
+//                            if (resourceId > 0) {
+//                                statusBarHeight2 = cordova.getActivity().getResources().getDimensionPixelSize(resourceId);
+//                                qyHeightDifference -= statusBarHeight2;
+//                            }
+
+//                            System.out.println("--- screenHeight: " + screenHeight);
+//                            System.out.println("--- rootViewHeight: " + rootViewHeight);
+//                            System.out.println("--- resultBottom: " + resultBottom);
+//                            System.out.println("--- resultTop: " + resultTop);
+//                            System.out.println("--- heightDiff: " + heightDiff);
+//                            System.out.println("--- density: " + density);
+//                            System.out.println("--- pixelHeightDiff: " + pixelHeightDiff);
+//                            System.out.println("--- previousHeightDiff: " + previousHeightDiff);
+//                            System.out.println("--- qyHeightDifference: " + qyHeightDifference);
+//                            System.out.println("--- pixelStatusBarHeight: " + pixelStatusBarHeight);
+
+                            // https://github.com/driftyco/ionic-plugin-keyboard/pull/188
+//                            if (initialHeightDiff != -1) {
+//                                pixelHeightDiff = pixelHeightDiff - initialHeightDiff;
+//                                System.out.println("--- set custom pixelHeightDiff: " + pixelHeightDiff);
+//                                System.out.println("--- initialHeightDiff was: " + initialHeightDiff);
+//                            }
+
                             if (pixelHeightDiff > 100 && pixelHeightDiff != previousHeightDiff) { // if more than 100 pixels, its probably a keyboard...
-                            	String msg = "S" + Integer.toString(pixelHeightDiff);
+                                // String msg = "S" + Integer.toString(pixelHeightDiff);
+                                // return status bar height in addition to keyboard height
+                                String msg = "S" + Integer.toString(pixelHeightDiff) + ";" + Integer.toString(pixelStatusBarHeight);
                                 result = new PluginResult(PluginResult.Status.OK, msg);
                                 result.setKeepCallback(true);
                                 callbackContext.sendPluginResult(result);
                             }
                             else if ( pixelHeightDiff != previousHeightDiff && ( previousHeightDiff - pixelHeightDiff ) > 100 ){
-                            	String msg = "H";
+                                String msg = "H";
                                 result = new PluginResult(PluginResult.Status.OK, msg);
                                 result.setKeepCallback(true);
                                 callbackContext.sendPluginResult(result);
                             }
+
+                            // https://github.com/driftyco/ionic-plugin-keyboard/pull/188
+//                            if (initialHeightDiff == -1) {
+//                                initialHeightDiff = pixelHeightDiff;
+//                                System.out.println("--- set new custom initialHeightDiff at end: " + initialHeightDiff);
+//                            }
+
                             previousHeightDiff = pixelHeightDiff;
-                         }
+                        }
                     };
 
                     rootView.getViewTreeObserver().addOnGlobalLayoutListener(list);
-                	
-                	
+
                     PluginResult dataResult = new PluginResult(PluginResult.Status.OK);
                     dataResult.setKeepCallback(true);
                     callbackContext.sendPluginResult(dataResult);
@@ -100,8 +169,4 @@ public class IonicKeyboard extends CordovaPlugin {
         }
         return false;  // Returning false results in a "MethodNotFound" error.
     }
-
-
 }
-
-
