@@ -5,6 +5,13 @@ The `cordova.plugins.Keyboard` object provides functions to make interacting wit
 
     cordova plugin add ionic-plugin-keyboard
 
+THIS IS A FORK!
+---------------
+
+This is a fork of the official driftyco keyboard plugin, based on its version 1.0.8 (https://github.com/driftyco/ionic-plugin-keyboard/tree/2d01d5fb379374b09dadabdc5f6446f0af80b146).
+We have modified the code so that the keyboard height is properly detected also on > 5.x Android versions having a soft bottom navigation bar.
+
+
 Methods
 -------
 
